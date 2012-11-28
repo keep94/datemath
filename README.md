@@ -22,6 +22,6 @@ Perform arithmetic with python datetime.date objects.
     now = datetime.datetime.now().date()
     dur = duration.Duration(week=100)
     count = dur.Count(your_birthday, now)
-    print duration.ZERO.Add(dur, multiply=count + 1).AddTo(your_birthday)
+    print dur.AddTo(your_birthday, multiply=count + 1)
 
 
