@@ -99,6 +99,8 @@ class Duration(object):
   Duration objects are immutable. Duration objects support equals and not
   equals, but they do not support comparision operators.
   """
+  __slots__ = ['_year', '_month', '_week', '_day', '_hash']
+
   def __init__(self, year=0, month=0, week=0, day=0):
     self._year = year
     self._month = month
