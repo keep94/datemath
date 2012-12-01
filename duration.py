@@ -1,4 +1,5 @@
 import calendar
+import collections
 import datetime
 
 
@@ -93,69 +94,22 @@ class _YEAR(_BASE_UNIT):
     return cls._ShowQuantity(x, 'year', 'years')
       
 
-class Duration(object):
+class Duration(collections.namedtuple('Duration', 'year month week day')):
   """Duration represents a fixed length of time in years, months, weeks, days.
 
   Duration objects are immutable. Duration objects support equals and not
   equals, but they do not support comparision operators.
   """
-  __slots__ = ('_year', '_month', '_week', '_day', '_hash')
+  __slots__ = ()
 
-  def __init__(self, year=0, month=0, week=0, day=0):
-    self._year = year
-    self._month = month
-    self._week = week
-    self._day = day
-    self._hash = hash((year, month, week, day))
+  def __new__(cls, year=0, month=0, week=0, day=0):
+    return tuple.__new__(cls, (year, month, week, day))
 
-  @property
-  def year(self):
-    """The number of years."""
-    return self._year
-
-  @property
-  def month(self):
-    """The number of months."""
-    return self._month
-
-  @property
-  def week(self):
-    """The number of weeks."""
-    return self._week
-
-  @property
-  def day(self):
-    """The number of days."""
-    return self._day
-
-  def __hash__(self):
-    return self._hash
-
-  def __eq__(self, rhs):
-    if self is rhs:
-      return True
-    if not isinstance(rhs, Duration):
-      return False
-    if self._hash != rhs._hash:
-      return False
-    return self._year == rhs._year and self._month == rhs._month and self._week == rhs._week and self._day == rhs._day
-
-  def __ne__(self, rhs):
-    return not self.__eq__(rhs)
-
-  def With(self, year=None, month=None, week=None, day=None):
-    """With returns a new Duration object with specified fields changed."""
-    if year is None:
-      year = self._year
-    if month is None:
-      month = self._month
-    if week is None:
-      week = self._week
-    if day is None:
-      day = self._day
-    if year == self._year and month == self._month and week == self._week and day == self._day:
-      return self
-    return Duration(year=year, month=month, week=week, day=day)
+  def With(self, **kwargs):
+    for x in kwargs:
+      if kwargs[x] != getattr(self, x):
+        return self._replace(**kwargs)
+    return self
 
   def Normalize(self):
     """Normalize normalizes this Duration object and returns the result.
@@ -164,8 +118,8 @@ class Duration(object):
     But note that 1 month 47 days => 1 month 47 days as the number of days in
     a month changes.
     """
-    months = _MONTHS_IN_YEAR * self._year + self._month
-    days = _DAYS_IN_WEEK * self._week + self._day
+    months = _MONTHS_IN_YEAR * self.year + self.month
+    days = _DAYS_IN_WEEK * self.week + self.day
     return self.With(year=months / _MONTHS_IN_YEAR, month=months % _MONTHS_IN_YEAR, week=days / _DAYS_IN_WEEK, day=days % _DAYS_IN_WEEK)
 
   @staticmethod
@@ -195,9 +149,9 @@ class Duration(object):
     Duration will be in months and days.
     """
     year, month, start_date = cls._ForPeriod(
-        start_date, end_date, prototype._year, prototype._month, _YEAR, _MONTH, _MONTHS_IN_YEAR)
+        start_date, end_date, prototype.year, prototype.month, _YEAR, _MONTH, _MONTHS_IN_YEAR)
     week, day, _ = cls._ForPeriod(
-        start_date, end_date, prototype._week, prototype._day, _WEEK, _DAY, _DAYS_IN_WEEK)
+        start_date, end_date, prototype.week, prototype.day, _WEEK, _DAY, _DAYS_IN_WEEK)
     return Duration(year=year, month=month, week=week, day=day)
       
 
@@ -207,13 +161,13 @@ class Duration(object):
     If multiply is set, then the result will be self + (rhs * multiply).
     """
     return Duration(
-        year=self._year + rhs._year * multiply,
-        month=self._month + rhs._month * multiply,
-        week=self._week + rhs._week * multiply,
-        day=self._day + rhs._day * multiply) 
+        year=self.year + rhs.year * multiply,
+        month=self.month + rhs.month * multiply,
+        week=self.week + rhs.week * multiply,
+        day=self.day + rhs.day * multiply) 
 
   def _ApproxDays(self):
-    return (self._year + self._month / 12.0) * 365.2425 + self._week * 7.0 + self._day * 1.0
+    return (self.year + self.month / 12.0) * 365.2425 + self.week * 7.0 + self.day * 1.0
 
   def Count(self, start_date, end_date):
     """Count computes how many of this Duration can fit between start_date and end_date.
@@ -237,22 +191,21 @@ class Duration(object):
     orig_date + (self * multiply)
     """
     result = orig_date
-    months = (_MONTHS_IN_YEAR * self._year + self._month) * multiply
+    months = (_MONTHS_IN_YEAR * self.year + self.month) * multiply
     if months:
       result = _MONTH.AddTo(result, months)
-    days = (_DAYS_IN_WEEK * self._week + self._day) * multiply
+    days = (_DAYS_IN_WEEK * self.week + self.day) * multiply
     if days:
       result = _DAY.AddTo(result, days)
     return result
     
   def __str__(self):
-    units = ((self._year, _YEAR), (self._month, _MONTH), (self._week, _WEEK), (self._day, _DAY))
+    units = ((self.year, _YEAR), (self.month, _MONTH), (self.week, _WEEK), (self.day, _DAY))
     return ', '.join(unit.ToString(x) for x, unit in units if x)
 
   def __repr__(self):
-    units = ((self._year, 'year'), (self._month, 'month'), (self._week, 'week'), (self._day, 'day'))
+    units = ((self.year, 'year'), (self.month, 'month'), (self.week, 'week'), (self.day, 'day'))
     return 'duration.Duration(%s)' % ', '.join('%s=%s' % (unit, x) for x, unit in units if x)
-
 
 YEAR = Duration(year=1)
 MONTH = Duration(month=1)
