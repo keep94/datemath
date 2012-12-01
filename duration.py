@@ -106,6 +106,10 @@ class Duration(collections.namedtuple('Duration', 'year month week day')):
     return tuple.__new__(cls, (year, month, week, day))
 
   def With(self, **kwargs):
+    """With returns a new Duration object with specified fields changed.
+
+    Example usage: new_value = old_value.With(day=1).
+    """
     for x in kwargs:
       if kwargs[x] != getattr(self, x):
         return self._replace(**kwargs)
